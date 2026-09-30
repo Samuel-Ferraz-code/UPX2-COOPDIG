@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COOPDIG — Cooperativa Digital Industrial</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <div class="logo"><span class="logo-box">C♻</span><div><strong>COOPDIG</strong><small>cooperativa digital • reutilização industrial</small></div></div>
+    <nav>
+      <a href="#market">Estoques</a>
+      <a href="#ranking">Ranking verde</a>
+      <a href="#simulador">Frete por peso</a>
+      <a href="#login">Login / Cadastro</a>
+    </nav>
+    <div class="top-actions">
+      <select id="citySelect" title="Sua localização"></select>
+      <button class="btn ghost" onclick="goLogin()">Entrar</button>
+      <button class="btn primary" id="btnAnnounce">+ Anunciar peça</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="pill">● COOPDIG • 1.240 empresas cooperadas • SP / RJ / MG / PR</span>
+      <h1>Excedente parado <em>vira receita.</em><br>Compre perto, sem frete abusivo.</h1>
+      <p>Cooperativa digital entre fábricas: anuncie peças não utilizadas, filtre pelos <b>anúncios mais próximos</b> para zerar transporte, compare com o preço de mercado e receba tudo com <b>nota fiscal obrigatória</b>.</p>
+      <div class="hero-search">
+        <input id="q" placeholder="Buscar: motor WEG, chapa aço, rolamento SKF, CLP...">
+        <select id="catFilter"><option value="">Todas categorias</option></select>
+      </div>
+      <div class="hero-search2">
+        <select id="radiusFilter">
+          <option value="30">📍 Até 30 km — retirada local / frete reduzido</option>
+          <option value="50">📍 Até 50 km</option>
+          <option value="150" selected>📍 Até 150 km (recomendado)</option>
+          <option value="300">📍 Até 300 km</option>
+          <option value="9999">🌎 Todas distâncias (+ frete por peso)</option>
+        </select>
+        <label class="check"><input type="checkbox" id="pickupOnly"> Só com retirada própria / sem frete</label>
+        <button class="btn primary" onclick="render()">Buscar perto de mim</button>
+      </div>
+      <div class="hero-meta">
+        <div><strong id="statEcon">R$ 0</strong><span>economizados vs. novo</span></div>
+        <div><strong id="statKg">0 t</strong><span>reutilizadas</span></div>
+        <div><strong>30%</strong><span>taxa cooperativa</span></div>
+      </div>
+    </div>
+    <div class="hero-card">
+      <div class="hero-card-head">COMO COBRAMOS <span>Mercado Livre / Shopee B2B</span></div>
+      <div class="calc-row"><label>Preço anúncio</label><strong id="simP">—</strong></div>
+      <div class="calc-row"><label>Preço novo no mercado</label><strong class="strike" id="simM">—</strong></div>
+      <div class="bar"><div id="simBar"></div></div>
+      <div class="calc-row small"><span>Taxa cooperativa (30%)</span><span id="simTaxa">—</span></div>
+      <div class="calc-row small"><span>Entrega (base R$45 + R$3,20/km + faixa de peso)</span><span id="simFrete">—</span></div>
+      <div class="calc-total"><span>Total comprador</span><strong id="simTotal">—</strong></div>
+      <div class="save">💡 Até 30 km: <strong>retirada própria = frete R$ 0</strong> • Acima disso o frete sobe com o peso.</div>
+    </div>
+  </div>
+</section>
+
+<div class="strip"><div class="wrap strip-in">
+  <span>✓ CNPJ verificado</span><span>✓ NF-e OBRIGATÓRIA</span><span>✓ Termo LGPD assinado</span><span>✓ Escrow cooperativo</span><span>✓ Retirada local sem taxa</span>
+</div></div>
+
+<main class="wrap">
+<section class="toolbar" id="market">
+  <h2>Anúncios próximos <span id="count"></span></h2>
+  <select id="sort" onchange="render()">
+    <option value="dist">Ordenar: Mais próximos (economiza frete)</option>
+    <option value="price">Menor preço total</option>
+    <option value="discount">Maior desconto vs. mercado</option>
+  </select>
+</section>
+<div class="frete-info">Quanto mais pesado, mais caro o envio: até 50kg base • 51–200kg +R$80 • 201–500kg +R$180 • 501–1000kg +R$350 • +1t R$0,45/kg extra. <b>Retirada própria até 50 km = R$ 0.</b></div>
+<section id="grid" class="grid"></section>
+
+<section id="ranking" class="panel dark">
+  <div class="rank-head"><div><h2>🏆 Ranking cooperado — quem mais recircula</h2><p>Pontuação por kg vendido + reutilizado via COOPDIG. Atualizado pelas vendas com NF-e.</p></div><span class="pill">selo verde mensal</span></div>
+  <div id="rankList" class="rank-list"></div>
+</section>
+
+<section class="cards3">
+  <div class="card"><h3>1. Vendedora anuncia</h3><p>Cadastra CNPJ, emite <b>NF-e obrigatória</b> e publica excedente. Sem NF-e o anúncio é bloqueado.</p></div>
+  <div class="card"><h3>2. Compradora filtra perto</h3><p>Ordena por distância, escolhe <b>retirada própria</b> e zera frete. Longe? Paga por peso + km.</p></div>
+  <div class="card"><h3>3. Cooperativa garante</h3><p>Pagamento retido, coleta em 48h, certificado de reutilização e pontos no ranking.</p></div>
+</section>
+
+<section id="simulador" class="panel">
+  <div>
+    <h2>Calculadora de entrega por peso</h2>
+    <p>Simule antes de propor. Frete = R$45 base + R$3,20/km + faixa de peso.</p>
+    <label>Distância entre empresas (km)</label>
+    <input type="range" id="rngKm" min="5" max="800" value="60" oninput="simUpdate()"><strong><span id="kmOut">60</span> km</strong>
+    <label>Peso do lote (kg)</label>
+    <input type="range" id="rngKg" min="10" max="5000" value="400" oninput="simUpdate()"><strong><span id="kgOut">400</span> kg</strong>
+    <label class="check"><input type="checkbox" id="rngPickup" onchange="simUpdate()"> Vou retirar pessoalmente (até 50 km = grátis)</label>
+  </div>
+  <div class="panel-result">
+    <div class="calc-row small"><span>Base coleta</span><span>R$ 45,00</span></div>
+    <div class="calc-row small"><span>Frete por km</span><span id="rFrete">—</span></div>
+    <div class="calc-row small"><span>Faixa de peso</span><span id="rPeso">—</span></div>
+    <div class="calc-row small"><span>Seguro carga (1,2%)</span><span id="rSeg">—</span></div>
+    <div class="calc-row small"><span>Desconto local ≤30km (-40%)</span><span id="rDesc">—</span></div>
+    <div class="calc-total"><span>Custo logístico estimado</span><strong id="rTotal">—</strong></div>
+    <small>CO₂ evitado ≈ <strong id="rCo2">—</strong></small>
+  </div>
+</section>
+
+<section id="login" class="panel auth">
+  <div>
+    <h2>Acesso cooperado</h2>
+    <p>Compradora e vendedora entram com o mesmo cadastro. CNPJ validado + termo assinado.</p>
+    <div class="tabs"><button id="tabIn" class="tab active" onclick="tab('in')">Entrar</button><button id="tabUp" class="tab" onclick="tab('up')">Cadastrar empresa</button></div>
+    <div id="formIn" class="form">
+      <input id="inCnpj" placeholder="CNPJ — 00.000.000/0001-00" maxlength="18" oninput="maskCnpj(this)">
+      <input id="inPass" type="password" placeholder="Senha">
+      <button class="btn primary" onclick="doLogin()">Entrar na cooperativa</button>
+      <small id="loginMsg" class="msg"></small>
+    </div>
+    <div id="formUp" class="form hidden">
+      <div class="frow"><button type="button" id="roleB" class="tab active" onclick="setRole('compradora')">🏭 Compradora</button><button type="button" id="roleS" class="tab" onclick="setRole('vendedora')">📦 Vendedora</button><button type="button" id="roleBS" class="tab" onclick="setRole('ambas')">🔄 Ambas</button></div>
+      <input id="upName" placeholder="Razão social *">
+      <input id="upCnpj" placeholder="CNPJ * — só PJ" maxlength="18" oninput="maskCnpj(this)">
+      <div class="frow"><input id="upEmail" placeholder="E-mail corporativo *"><input id="upPass" type="password" placeholder="Senha *"></div>
+      <div class="frow"><select id="upCity"></select><input id="upNfe" placeholder="Inscrição Estadual / NF-e habilitada *"></div>
+      <div class="term-box"><strong>Termo de Consentimento LGPD + Regras COOPDIG (resumo)</strong>
+        <p>Li e aceito o <a href="#" onclick="showTermo();return false">Termo completo</a>: autorizo tratamento de dados (LGPD arts. 7º e 11), verificação de CNPJ/NF-e, intermediação sem transferência de propriedade, <b>envio OBRIGATÓRIO com NF-e válida</b> — sem ela a venda é cancelada e a conta suspensa. A COOPDIG não responde por vícios do produto (art. 18 CDC c/ direito de arrependimento B2B contratual de 7 dias para vício oculto).</p>
+      </div>
+      <label class="check"><input type="checkbox" id="upTerm"> Li, aceito o Termo de Consentimento e me comprometo a emitir NF-e em toda venda *</label>
+      <button class="btn primary" onclick="doRegister()">Cadastrar e assinar termo</button>
+      <small id="regMsg" class="msg"></small>
+    </div>
+  </div>
+  <div class="panel-result term-side">
+    <h3>🔒 Por que exigimos isso?</h3>
+    <ul><li><b>CNPJ válido:</b> só PJ, evita fraude (papel de Mercado Livre/Shopee verificado).</li><li><b>NF-e obrigatória:</b> exigência fiscal (art. 113 CTN + RICMS). Sem NF-e = crime tributário e anúncio bloqueado.</li><li><b>Termo LGPD:</b> protege a COOPDIG e sua empresa: finalidade, retenção, direitos (arts. 9º e 18 LGPD).</li><li><b>Ranking:</b> só conta venda com NF-e emitida.</li></ul>
+    <button class="btn ghost" onclick="showTermo()">Ler termo completo</button>
+    <div id="userBox" class="userbox hidden"></div>
+  </div>
+</section>
+
+<section class="panel dark foot-note">
+  <small>⚖️ COOPDIG atua como <b>intermediadora</b> (arts. 722–729 CC — corretagem). Não adquire propriedade dos bens. Responsabilidade fiscal e pela veracidade do anúncio é exclusiva da vendedora. Modelo de referência: Mercado Livre / Shopee (marketplace com escrow). Recomendada revisão jurídica final antes do lançamento.</small>
+</section>
+</main>
+
+<footer><div class="wrap foot">COOPDIG © 2026 — Cooperativa Digital • NF-e obrigatória • Termo LGPD <span id="footUser">visitante</span></div></footer>
+
+<div id="modal" class="modal hidden"><div class="modal-box" id="modalBox"></div></div>
+<div id="drawerAnnounce" class="modal hidden"><div class="modal-box">
+  <h2>Anunciar excedente <small style="color:var(--mut)">(requer login + NF-e)</small></h2>
+  <div class="form">
+    <input id="fTitle" placeholder="Ex: Motor WEG 10CV trifásico">
+    <div class="frow"><select id="fCat"></select><input id="fPrice" type="number" placeholder="Preço R$"></div>
+    <div class="frow"><input id="fMarket" type="number" placeholder="Preço novo mercado R$"><input id="fQty" type="number" placeholder="Qtd"></div>
+    <div class="frow"><select id="fCity"></select><select id="fCond"><option>Novo / excedente</option><option>Seminovo revisado</option><option>Usado funcional</option><option>Para reforma</option></select></div>
+    <div class="frow"><input id="fWeight" type="number" placeholder="Peso unitário (kg) *"><input id="fNfe" placeholder="NF-e de origem / compromisso *"></div>
+    <textarea id="fDesc" placeholder="Estado, motivo do excedente, especificações..."></textarea>
+    <label class="check"><input type="checkbox" id="fNfeOk"> Confirmo que emitirei NF-e na venda (obrigatório) *</label>
+    <button class="btn primary" onclick="publish()">Publicar anúncio</button>
+    <button class="btn ghost" onclick="closeAll()">Cancelar</button>
+  </div>
+</div></div>
+
+<script src="app.js"></script>
+</body>
+</html>
